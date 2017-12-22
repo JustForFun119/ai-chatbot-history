@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>AI Chatbot History</title>
+  <meta charset="utf-8">
+  <meta content="width=device-width,initial-scale=1,minimal-ui" name="viewport">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic|Material+Icons">
+  <link rel="stylesheet" href="https://unpkg.com/vue-material@beta/dist/vue-material.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/vue-material@beta/dist/theme/default.css">
+  <link rel='stylesheet' href='https://unpkg.com/v-calendar/lib/v-calendar.min.css'>
+  <link rel='stylesheet' href='styles/styles.css'>
+  <script src="https://unpkg.com/vue"></script>
+  <script src="https://unpkg.com/vue-material@beta"></script>
+  <script src="scripts/papaparse.min.js"></script>
+  <script src='https://unpkg.com/v-calendar'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js'></script>
+</head>
+
+<body>
+  <div id="app">
+    <md-app>
+      <md-app-toolbar class="md-primary">
+        <span class="md-title">AI Chatbot History</span>
+      </md-app-toolbar>
+      <md-app-content>
+        <div v-if="loadedChatHistory">
+          <div class="md-layout md-gutter md-alignment-top-center">
+            <md-content class="md-layout-item md-size-50">
+              <md-tabs :md-active-tab="activeTab" @md-changed="(tabID) => activeTab = tabID" class="md-primary">
+                <md-tab id="tab-datepicker" md-label="Calendar" md-icon="event">
+                  <md-content class="md-scrollbar chat-filter">
+                    <v-date-picker v-model="selectedDate" :available-dates="availableDates" :from-page="datepickerFrom" :attributes="datepickerAttrs"
+                      is-inline></v-date-picker>
+                  </md-content>
+                </md-tab>
+                <md-tab id="tab-sessions" md-label="Sessions" md-icon="chat">
+                  <md-content class="md-scrollbar chat-filter">
+                    <div v-for="(session, index) in historyBySessions" :key="index" @click="() => selectedSessionIdx = index">
+                      <md-card class="session-item" md-with-hover>
+                        <md-ripple>
+                          <md-card-header class="session-item-header">
+                            <div class="md-title">Session #{{ index + 1 }}</div>
+                            <div class="md-subhead">
+                              <div>
+                                <md-icon>date_range</md-icon>
+                                <span>{{ session[0].Time }} - {{ session[session.length - 1].Time }}</span>
+                              </div>
+                              <div>
+                                <md-icon>access_time</md-icon>
+                                <span>{{ getSessionDuration(session) }}</span>
+                              </div>
+                              <div>
+                                <md-icon>message</md-icon>
+                                <span>{{ session.length }} messages</span>
+                              </div>
+                            </div>
+                          </md-card-header>
+                        </md-ripple>
+                      </md-card>
+                    </div>
+                  </md-content>
+                </md-tab>
+                <md-tab id="tab-speakers" md-label="Speakers" md-icon="people">
+                  <md-content class="md-scrollbar chat-filter">
+                    <md-radio v-for="(speaker, index) in availableSpeakers" v-model="selectedSpeaker" :value="speaker" :key="index">{{ speaker }}</md-radio>
+                  </md-content>
+                </md-tab>
+              </md-tabs>
+            </md-content>
+            <md-content class="md-layout-item md-size-50">
+              <md-content class="md-primary chat-history-header">
+                <md-icon style="color: white">history</md-icon>
+                <span class="md-headline">Chat History</span>
+              </md-content>
+              <md-content class="md-layout-item md-scrollbar chat-view">
+                <div v-for="(history, index) in historyList" :key="index">
+                  <md-card v-if="index === 0 || history.Session !== historyList[index-1].Session" class="md-primary">
+                    <md-card-content class="chat-session-start">Session #{{ history.Session + 1 }}</md-card-content>
+                  </md-card>
+                  <md-card class="chat-item">
+                    <md-card-area md-inset>
+                      <md-card-header class="chat-item-header">
+                        <div class="md-layout">
+                          <md-avatar>
+                            <md-icon>{{ history.Speaker === availableSpeakers[0] ? 'person' : 'person_outline' }}</md-icon>
+                          </md-avatar>
+                          <div>
+                            <div class="md-body-2">{{ history.Speaker }}</div>
+                            <div class="md-subhead">{{ history.Time }}</div>
+                          </div>
+                          <div class="md-layout-item md-alignment-center-right chat-item-icons">
+                            <md-icon v-if="history.Liked">favorite</md-icon>
+                            <md-icon v-if="history.Changed">mode_edit</md-icon>
+                          </div>
+                        </div>
+                      </md-card-header>
+                      <md-card-content class="chat-item-content">
+                        {{ history.Sentence }}
+                      </md-card-content>
+                    </md-card-area>
+                  </md-card>
+                </div>
+              </md-content>
+            </md-content>
+          </div>
+        </div>
+        <div v-else-if="canProcessFile">
+          <md-empty-state md-icon="file_upload" md-label="Upload chatbot history" md-description="Upload chatbot history file to interact with chat history!">
+            <div>
+              <md-field>
+                <label>Upload chatbot history file</label>
+                <md-file placeholder="history.csv" accept=".csv" @md-change="fileChanged"></md-file>
+              </md-field>
+              <span class="md-caption" style="display: block; margin: 1em 0">(Don't worry, your data is not saved.)</span>
+            </div>
+          </md-empty-state>
+        </div>
+        <div v-else>
+          <md-empty-state md-icon="no_sim" md-label="No file upload support" md-description="Your browser does not support file uploading :(">
+          </md-empty-state>
+        </div>
+      </md-app-content>
+    </md-app>
+  </div>
+  <script src="scripts/index.js"></script>
+  <script>
+    Vue.use(VueMaterial.default);
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        // app states
+        canProcessFile: false,
+        loadedChatHistory: false,
+        // app data
+        chatHistory: null, // chat history data as reference
+        historyByDates: [], // chat history by dates
+        historyBySessions: [], // chat history by sessions
+        historyBySpeakers: [], // chat history by speakers
+        // view states
+        activeTab: 'tab-datepicker', // active tab for chat history filter
+        selectedDate: null, // datepicker: selected date
+        selectedSessionIdx: null, // selected chat history session
+        selectedSpeaker: null, // selected chat history session
+        datepickerFrom: null, // date picker 'from-page' attribute
+        datepickerAttrs: [ // date picker attributes
+          { // chatbot project start date
+            bar: { backgroundColor: '#398fac' },
+            dates: [moment('2017-11-15').toDate()]
+          },
+          { // chatbot project end date
+            bar: { backgroundColor: '#ff4d4d' },
+            dates: [moment('2017-11-30').toDate()]
+          }
+        ]
+      },
+      computed: {
+        // Chat history shown in view
+        historyList: function () {
+          if (this.activeTab === 'tab-datepicker') {
+            // get chat history of selected date
+            return this.historyByDates[moment(this.selectedDate).format('YYYY-MM-DD')];
+          } else if (this.activeTab === 'tab-sessions') {
+            // get chat history of selected session
+            return this.historyBySessions[this.selectedSessionIdx];
+          } else if (this.activeTab === 'tab-speakers') {
+            // get chat history of selected speaker
+            return this.historyBySpeakers[this.selectedSpeaker];
+          }
+        },
+        availableDates: function () {
+          // available dates = dates with chat history
+          // found in history grouped by dates
+          const dates = Object.keys(this.historyByDates);
+          // convert date strings to JS Date objects for date picker
+          const jsDates = dates.map(date => moment(date).toDate());
+          this.selectedDate = jsDates[0]; // select first available date on datepicker
+          // show calendar month of first available date
+          // after some delay b/c of some issue with attribute binding?
+          setTimeout(() => {
+            this.datepickerFrom = {
+              month: this.selectedDate.getMonth() + 1,
+              year: this.selectedDate.getFullYear()
+            };
+          }, 500);
+          return jsDates;
+        },
+        availableSpeakers: function () {
+          // found in history grouped by speakers
+          const speakers = Object.keys(this.historyBySpeakers);
+          this.selectedSpeaker = speakers[0]; // select first available date on datepicker
+          return speakers;
+        },
+      },
+      watch: {
+        // Chat history data
+        chatHistory: function (newHistory) {
+          const historyByDates = {}; // group history by dates
+          const sessions = []; // group chat history by sessions
+          const msgsBySpeakers = {}; // group messages by speakers
+
+          newHistory.forEach(history => {
+            const date = moment.unix(history['Timestamp']).format('YYYY-MM-DD');
+            if (!historyByDates[date]) {
+              historyByDates[date] = [];
+            }
+            if (!sessions[history.Session]) {
+              sessions[history.Session] = [];
+            }
+            if (!msgsBySpeakers[history.Speaker]) {
+              msgsBySpeakers[history.Speaker] = [];
+            }
+            historyByDates[date].push(history);
+            sessions[history.Session].push(history);
+            msgsBySpeakers[history.Speaker].push(history);
+          });
+
+          this.historyByDates = historyByDates;
+          if (sessions.length > 0) this.selectedSessionIdx = 0; // default to first session
+          this.historyBySessions = sessions;
+          this.historyBySpeakers = msgsBySpeakers;
+        },
+      },
+      created: function () {
+        // check support for File-related APIs
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+          this.canProcessFile = true;
+        } else { // no support file APIs
+          this.canProcessFile = false;
+        }
+      },
+      methods: {
+        onTabChange: function (tabID) { this.activeTab = tabID; },
+        getSessionDuration: function (session) {
+          // get Moment.diff time difference between first and last message of session
+          const unixTimeDiff = moment(session[session.length - 1].Timestamp).diff(moment(session[0].Timestamp));
+          // convert time diff to readable duration string
+          return moment.duration(unixTimeDiff, 'seconds').humanize();
+        },
+        fileChanged: function (fileList) {
+          const file = fileList[0];
+          if (file.type === 'application/vnd.ms-excel') {
+            parseChatHistoryFile(file, file.size).then((chatHistoryJson) => {
+              this.chatHistory = chatHistoryJson;
+              this.loadedChatHistory = true;
+            });
+          }
+        }
+      }
+    })
+  </script>
+</body>
+
+</html>

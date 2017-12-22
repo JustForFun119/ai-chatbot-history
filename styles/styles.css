@@ -1,0 +1,41 @@
+.chat-filter,
+.chat-view {
+    height: 75vh;
+    overflow: auto;
+}
+
+.chat-filter {
+    padding: 24px;
+}
+
+.chat-history-header {
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+#tab-datepicker .chat-filter {
+    text-align: center;
+}
+
+#tab-speakers .md-radio {
+    display: flex;
+}
+
+.chat-filter .session-item,
+.chat-view .chat-item {
+    margin: 16px;
+}
+
+.chat-view .session-item-header,
+.chat-view .chat-session-start,
+.chat-view .chat-item .chat-item-header {
+    padding: 8px 16px;
+}
+
+.chat-view .chat-item .chat-item-header .chat-item-icons {
+    text-align: end;
+}
+
+.chat-view .chat-item .chat-item-content {
+    padding: 8px 24px;
+}
