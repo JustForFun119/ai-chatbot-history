@@ -30,13 +30,14 @@
               <md-tabs :md-active-tab="activeTab" @md-changed="(tabID) => activeTab = tabID" class="md-primary">
                 <md-tab id="tab-datepicker" md-label="Calendar" md-icon="event">
                   <md-content class="md-scrollbar chat-filter">
-                    <v-date-picker v-model="selectedDate" :available-dates="availableDates" :from-page="datepickerFrom" :attributes="datepickerAttrs"
-                      is-inline></v-date-picker>
+                    <v-date-picker v-model="selectedDate" :available-dates="availableDates" :from-page="datepickerFrom"
+                      :attributes="datepickerAttrs" is-inline></v-date-picker>
                   </md-content>
                 </md-tab>
                 <md-tab id="tab-sessions" md-label="Sessions" md-icon="chat">
                   <md-content class="md-scrollbar chat-filter">
-                    <div v-for="(session, index) in historyBySessions" :key="index" @click="() => selectedSessionIdx = index">
+                    <div v-for="(session, index) in historyBySessions" :key="index"
+                      @click="() => selectedSessionIdx = index">
                       <md-card class="session-item" md-with-hover>
                         <md-ripple>
                           <md-card-header class="session-item-header">
@@ -63,7 +64,8 @@
                 </md-tab>
                 <md-tab id="tab-speakers" md-label="Speakers" md-icon="people">
                   <md-content class="md-scrollbar chat-filter">
-                    <md-radio v-for="(speaker, index) in availableSpeakers" v-model="selectedSpeaker" :value="speaker" :key="index">{{ speaker }}</md-radio>
+                    <md-radio v-for="(speaker, index) in availableSpeakers" v-model="selectedSpeaker" :value="speaker"
+                      :key="index">{{ speaker }}</md-radio>
                   </md-content>
                 </md-tab>
               </md-tabs>
@@ -83,7 +85,8 @@
                       <md-card-header class="chat-item-header">
                         <div class="md-layout">
                           <md-avatar>
-                            <md-icon>{{ history.Speaker === availableSpeakers[0] ? 'person' : 'person_outline' }}</md-icon>
+                            <md-icon>{{ history.Speaker === availableSpeakers[0] ? 'person' : 'person_outline' }}
+                            </md-icon>
                           </md-avatar>
                           <div>
                             <div class="md-body-2">{{ history.Speaker }}</div>
@@ -106,18 +109,21 @@
           </div>
         </div>
         <div v-else-if="canProcessFile">
-          <md-empty-state md-icon="file_upload" md-label="Upload chatbot history" md-description="Upload chatbot history file to interact with chat history!">
+          <md-empty-state md-icon="file_upload" md-label="Upload chatbot history"
+            md-description="Upload chatbot history file to interact with chat history!">
             <div>
               <md-field>
                 <label>Upload chatbot history file</label>
                 <md-file placeholder="history.csv" accept=".csv" @md-change="fileChanged"></md-file>
               </md-field>
-              <span class="md-caption" style="display: block; margin: 1em 0">(Don't worry, your data is not saved.)</span>
+              <span class="md-caption" style="display: block; margin: 1em 0">(Don't worry, your data is not
+                saved.)</span>
             </div>
           </md-empty-state>
         </div>
         <div v-else>
-          <md-empty-state md-icon="no_sim" md-label="No file upload support" md-description="Your browser does not support file uploading :(">
+          <md-empty-state md-icon="no_sim" md-label="No file upload support"
+            md-description="Your browser does not support file uploading :(">
           </md-empty-state>
         </div>
       </md-app-content>
@@ -240,12 +246,11 @@
         },
         fileChanged: function (fileList) {
           const file = fileList[0];
-          if (file.type === 'application/vnd.ms-excel') {
-            parseChatHistoryFile(file, file.size).then((chatHistoryJson) => {
-              this.chatHistory = chatHistoryJson;
-              this.loadedChatHistory = true;
-            });
-          }
+          console.log('fileChanged', file)
+          parseChatHistoryFile(file, file.size).then((chatHistoryJson) => {
+            this.chatHistory = chatHistoryJson;
+            this.loadedChatHistory = true;
+          });
         }
       }
     })
